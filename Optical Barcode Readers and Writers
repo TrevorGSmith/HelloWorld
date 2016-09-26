@@ -1,0 +1,753 @@
+
+
+/*
+ * Group 3
+ * Trevor Smith
+ * Thomas Lam
+ * Wendy Grey
+ * CST 338
+ * Assignment 4
+ * Title: "Barcode Reader"
+ * Date: 9/21/2016
+ */
+public class Assign4
+{
+ public static void main(String[] args)
+   {
+      String[] sImageIn =
+      {
+         "                                               ",
+         "                                               ",
+         "                                               ",
+         "     * * * * * * * * * * * * * * * * * * * * * ",
+         "     *                                       * ",
+         "     ****** **** ****** ******* ** *** *****   ",
+         "     *     *    ****************************** ",
+         "     * **    * *        **  *    * * *   *     ",
+         "     *   *    *  *****    *   * *   *  **  *** ",
+         "     *  **     * *** **   **  *    **  ***  *  ",
+         "     ***  * **   **  *   ****    *  *  ** * ** ",
+         "     *****  ***  *  * *   ** ** **  *   * *    ",
+         "     ***************************************** ",  
+         "                                               ",
+         "                                               ",
+         "                                               "
+
+      };      
+            
+         
+      
+      String[] sImageIn_2 =
+      {
+            "                                          ",
+            "                                          ",
+            "* * * * * * * * * * * * * * * * * * *     ",
+            "*                                    *    ",
+            "**** *** **   ***** ****   *********      ",
+            "* ************ ************ **********    ",
+            "** *      *    *  * * *         * *       ",
+            "***   *  *           * **    *      **    ",
+            "* ** * *  *   * * * **  *   ***   ***     ",
+            "* *           **    *****  *   **   **    ",
+            "****  *  * *  * **  ** *   ** *  * *      ",
+            "**************************************    ",
+            "                                          ",
+            "                                          ",
+            "                                          ",
+            "                                          "
+
+      };
+     
+      BarcodeImage bc = new BarcodeImage(sImageIn);
+      DataMatrix dm = new DataMatrix(bc);
+     
+      // First secret message
+      dm.translateImageToText();
+      dm.displayTextToConsole();
+      dm.displayImageToConsole();
+      
+      
+      // second secret message
+      bc = new BarcodeImage(sImageIn_2);
+      dm.scan(bc);
+      dm.translateImageToText();
+      dm.displayTextToConsole();
+      dm.displayImageToConsole();
+      
+      // create your own message
+      dm.readText("What a great resume builder this is!");
+      dm.generateImageFromText();
+      dm.displayTextToConsole();
+      dm.displayImageToConsole();
+      
+   }
+}
+
+// define an interface of type BarcodeIO
+interface BarcodeIO
+{
+   public boolean scan(BarcodeImage bc);
+   public boolean readText(String text); 
+   public boolean generateImageFromText();
+   public boolean translateImageToText();
+   public void displayTextToConsole();
+   public void displayImageToConsole();
+}
+
+//stores, modifies and retrieves the data in a 2D image.
+class BarcodeImage implements Cloneable
+{
+   public static final int MAX_HEIGHT = 30;   //dimensions of height max
+   public static final int MAX_WIDTH = 65;    //width max of image
+   private boolean[][] image_data;            //returns false if data is to large
+  
+   //default constructor; stuffs with blanks as default
+   public BarcodeImage()
+   {
+      loadImageWithBlanks();                 
+   }
+   
+   // Takes a 1D array of Strings and converts it to the internal 2D array of booleans.
+   // Sets usable barcode to bottom left
+   public BarcodeImage(String[] str_data)
+   {
+      loadImageWithBlanks();
+      if(checkSize(str_data))
+      {
+         for(int k=0; k<str_data.length; k++)
+         {
+            for(int j=0; j<str_data[0].length(); j++)
+            {
+               if(str_data[k].charAt(j) == '*')
+               {
+                  image_data[k][j] = true;
+               }
+            }
+         }
+         cleanBarcode();
+      }
+   }
+  
+   //Accessor
+   //returns false if invalid location
+   public boolean getPixel(int row, int col)
+   {
+      if(row<MAX_HEIGHT && col<MAX_WIDTH)
+      {
+         return image_data[row][col]; 
+      }
+      else
+         return false;
+   }
+  
+   //Mutator
+   //returns false if invalid location
+   public boolean setPixel(int row, int col, boolean value)
+   {
+      if(row<MAX_HEIGHT && col<MAX_WIDTH)
+      {
+         image_data[row][col] = value;
+         return true;
+      }
+      else
+         return false;
+   }
+   
+   //makes an identical separate copy of this BarcodeImage
+   public BarcodeImage clone() throws CloneNotSupportedException //Thomas
+   {
+      try
+      {
+         BarcodeImage newBarcodeImage = (BarcodeImage) super.clone();
+         
+         //make a copy of image_data array
+         newBarcodeImage.image_data = new boolean[this.image_data.length][];
+         for (int i = 0; i < this.image_data.length; i++) {
+            newBarcodeImage.image_data[i] = this.image_data[i].clone();
+         }
+         return newBarcodeImage;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         return null;
+      }
+   }
+  
+   //displays barcode image, includes whitespace
+   public void displayToConsole()
+   {
+      for(int i=0; i<MAX_HEIGHT;  i++)
+      {
+         System.out.println();
+         for(int j=0; j<MAX_WIDTH ; j++)
+         {
+            if(image_data[i][j])
+            {
+               System.out.print('*');
+            }
+            else
+            {
+               System.out.print(' ');
+            }
+         }
+      }
+      System.out.println();
+   }
+   
+   //moves barcode to bottom left of image
+   private void cleanBarcode()
+   {
+      //start at bottom left, find offset
+      int bottomOffset = 0;
+      int leftOffset = 0;
+      
+      boolean isRowClear = true;
+      boolean isColumnClear = true;
+  
+      for(int i=MAX_HEIGHT-1; i>=0; i--)
+      {
+         for(int j=0; j<MAX_WIDTH; j++)
+         {
+            if(image_data[i][j] == true)
+            {
+               isRowClear = false;
+               
+               //the first time data is reached, the column counter is the left offset
+               if(isColumnClear)
+               {
+                  leftOffset = j;
+                  isColumnClear = false;
+               }
+            }
+         }
+         //increment bottom offset until a row with data is reached
+         if(isRowClear)
+            bottomOffset++;
+      }
+      
+      //shift barcode down and to left
+      shiftBarcodeDown(bottomOffset);
+      shiftBarcodeLeft(leftOffset);
+   }
+   
+   //shift barcode down by given offset
+   private void shiftBarcodeDown(int offset)
+   {
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= offset; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+            this.setPixel(i,j,this.getPixel(i-offset, j));
+      }
+     
+      //finish top with white
+      for(int i = offset-1; i >= 0; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+            this.setPixel(i,j,false);
+      }
+   }
+  
+   //shift barcode to left by given offset
+   private void shiftBarcodeLeft(int offset)
+   {
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= 0; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH - offset; j++)
+            this.setPixel(i,j,this.getPixel(i, j + offset));
+      }
+      
+      //finish right with white
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= 0; i--)
+      {
+         for(int j=BarcodeImage.MAX_WIDTH - offset; j<BarcodeImage.MAX_WIDTH; j++)
+            this.setPixel(i,j,false);
+      }
+   }
+   
+   //initialize image_data at Max height/width, load with false vals
+   private void loadImageWithBlanks()
+   {
+      image_data = new boolean[MAX_HEIGHT][MAX_WIDTH];
+      
+      for (int row = 0; row < MAX_HEIGHT-1; row++)
+         for (int col = 0; col < MAX_WIDTH-1; col++)
+            image_data[row][col] = false; 
+   }
+  
+   //checks that incoming string array is of appropriate size
+   private boolean checkSize(String[] data)
+   {
+      int rowLength = data[0].length();
+     
+      //return false if greater than max width or height
+      if(data.length > MAX_HEIGHT || data[0].length() > MAX_WIDTH)
+         return false;
+      
+      //return false if row lengths are not uniform, or if null
+      for(int k=0; k<data.length; k++)
+      {
+         if(data[k].length() != rowLength || data[k] == null)
+            return false;
+      }
+     
+      //otherwise, return true
+      return true;
+   }
+  
+  
+}
+
+class DataMatrix implements BarcodeIO
+{
+   //indicate black/white pixels of a barcode
+   public static final char BLACK_CHAR = '*';
+   public static final char WHITE_CHAR = ' ';
+   
+   //a single internal copy of any image scanned-in
+   //OR passed-into the constructor 
+   //OR created by BarcodeIO's generateImageFromText().
+   private BarcodeImage image;
+   
+   //a single internal copy of any text read-in 
+   //OR passed-into the constructor
+   //OR created by BarcodeIO's translateImageToText().
+   private String text;
+   
+   //the portion of the bar code with true signal, includes spine & borders
+   private int actualWidth, actualHeight;
+   
+   //default constructor, stores blank BarcodeImage, sets text to empty string
+   public DataMatrix() 
+   {
+       image = new BarcodeImage();
+       text = "";
+       actualWidth = 0;
+       actualHeight = 0;
+   }
+   
+   //Takes image, cleans, stores, sets text to empty string
+   public DataMatrix(BarcodeImage newImage)
+   {
+       if(!scan(newImage))
+           image = new BarcodeImage();
+       text = "";
+   }
+   
+   //Sets the text, stores blank BarcodeImage
+   DataMatrix(String text) 
+   {
+       image = new BarcodeImage();
+       if(!readText(text))
+           this.text = "";
+   }
+   
+   //Mutators, can take in a BarcodeImage or text
+   
+   //takes text in, resets actualWidth and actualHeight to 0
+   public boolean readText(String incomingText)
+   {
+      if(incomingText == null)
+         return false;
+           
+      this.text = incomingText;
+      image = new BarcodeImage();
+      actualWidth = 0;
+      actualHeight = 0;
+      return true;
+   }
+   
+   //clean image, set actualWidth and actualHeight
+   public boolean scan(BarcodeImage image)
+   {
+      try
+      {
+         this.image = (BarcodeImage) image.clone();
+         cleanImage();
+         actualWidth = computeSignalWidth();
+         actualHeight = computeSignalHeight();
+         return true;
+      }
+      catch(CloneNotSupportedException ex)
+      {
+         return false;
+      }
+   }
+   
+   //Accessors
+   public int actualWidth()
+   {
+      return this.actualWidth;
+   }
+   
+   public int actualHeight()
+   {
+      return this.actualHeight;
+   }
+   
+   //uses spine to determine width of signal
+   private int computeSignalWidth() 
+   {
+       int i = 0;
+       while(image.getPixel(BarcodeImage.MAX_HEIGHT - 1, i))
+          i++;
+       return i;
+   }  
+   
+   //uses spine to determine height of signal
+   private int computeSignalHeight()
+   {
+       int i = 0;
+       for(int j=0; j<BarcodeImage.MAX_HEIGHT; j++)
+       {
+          if(image.getPixel(j, 0))
+             i++;
+       }
+       return i - 1;
+   }
+   
+   //Implementation of all BarcodeIO methods.
+   
+   //moves signal to bottom left of image
+   private void cleanImage()
+   {
+      //start at bottom left, find offset
+      int bottomOffset = 0;
+      int leftOffset = 0;
+   
+      boolean isRowClear = true;
+      boolean isColumnClear = true;
+      
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i>=0; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+         {
+            if(image.getPixel (i,j) == true)
+            {
+                isRowClear = false;
+                
+                //the first time data is reached, the column counter is the left offset
+                if(isColumnClear)
+                {
+                   leftOffset = j;
+                   isColumnClear = false;
+                }
+            }
+         }
+        //increment bottom offset until a row with data is reached
+         if(isRowClear)
+            bottomOffset++;
+      }
+      
+      //shift image by computed offsets
+      shiftImageDown(bottomOffset);
+      shiftImageLeft(leftOffset);
+   }
+   
+   //helper methods for cleanImage
+   
+   //resets the image to the bottom by given offset
+   private void shiftImageDown(int offset)
+   {
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= offset; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+         {
+            image.setPixel(i,j,image.getPixel(i-offset, j));
+         }
+      }
+      
+      //finish top with white
+      for(int i=offset-1; i >= 0; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+         {
+            image.setPixel(i,j,false);
+         }
+      }
+   }
+   
+   //resets the image to the left by given offset
+   private void shiftImageLeft(int offset)
+   {
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= 0; i--)
+      {
+         for(int j=0; j<BarcodeImage.MAX_WIDTH - offset; j++)
+         {
+            image.setPixel(i,j,image.getPixel(i, j + offset));
+         }
+      }
+      //finish right with white
+      for(int i=BarcodeImage.MAX_HEIGHT-1; i >= 0; i--)
+      {
+         for(int j=BarcodeImage.MAX_WIDTH - offset; j<BarcodeImage.MAX_WIDTH; j++)
+         {
+            image.setPixel(i,j,false);
+         }
+      }
+   }
+
+   //converts text from hexadecimal chars and stores as BarcodeImage
+   public boolean generateImageFromText()
+   {
+      int textLength = text.length();
+      
+      //if text is too big, image can't be generated, return false
+      if (textLength > BarcodeImage.MAX_WIDTH)
+         return false;
+      
+      char[][] textToImage = new char [textLength][9]; 
+      char valueOfText;
+      
+      //fill array with ' ' first...
+      for (int i = 0; i < textLength; i++)
+      {
+         for (int j = 0; j < textToImage[i].length; j++)
+         {
+            textToImage[i][j] = ' ';
+         }
+      }
+         
+      //then replace '' with '*' depending on the value of text char
+      for (int i = 0; i < textLength; i++)
+      {
+         valueOfText = text.charAt(i);
+         int value = (int)valueOfText;
+         for(int j=7; j>=0; j--)
+         {
+            //setting column value
+            if((value >= Math.pow(2, j)))
+            {
+               textToImage[i][j+1] = '*';
+               value -= Math.pow(2, j);
+            }
+         }
+      }
+      
+      //rotate image to bottom left and convert to array of strings
+      textToImage = rotateCCW(textToImage);
+      String [] stringArray = changeToStringArray(textToImage);
+      
+      //store image and reset actualWidth and actualHeight
+      this.image = new BarcodeImage(stringArray);
+      this.actualWidth = computeSignalWidth();
+      this.actualHeight = computeSignalHeight();
+      return true;
+   }
+   
+   //prints barcode text on separate line
+   public void displayTextToConsole()
+   {
+      System.out.println("\n" + text);
+   }
+    
+   //displays barcode image to console, with border, and with whitespace removed
+   public void displayImageToConsole()
+   {
+      String printString = "";
+      
+      //add top border
+      for(int k=0; k<actualWidth + 3; k++)
+         printString += '-';
+      
+      //get string from row 
+      for(int i=0; i< BarcodeImage.MAX_HEIGHT;  i++)
+      {
+         String rowString = "";
+         Boolean isRowEmpty = true;
+         int numWhites = 0;
+         
+         //go through row, count whitespaces and only add them in if another
+         //pixel is added
+         for(int j=0; j<BarcodeImage.MAX_WIDTH; j++)
+          {
+             if(image.getPixel (i,j))
+             {
+                isRowEmpty = false;
+                for(int m=0; m < numWhites; m++)
+                   rowString += WHITE_CHAR;
+                rowString += BLACK_CHAR;
+                numWhites = 0;
+             }
+             else
+                numWhites++;
+          }
+         
+         //add in whitespace to reach signal length
+         while(rowString.length()<actualWidth + 1)
+            rowString += WHITE_CHAR;
+         
+         //add left and right border to string
+         rowString = "\n|" + rowString + "|";
+         
+         //if row is not empty, add it to string
+         if(!isRowEmpty)
+            printString += rowString;
+      }
+      printString += "\n";
+      for(int k=0; k<actualWidth + 3; k++)
+         printString += '-';
+      System.out.println(printString);
+   }
+
+   //converts barcodeImage to text
+   public boolean translateImageToText()
+   {
+      //rotate image to get hexadecimal values along rows
+      boolean [][] displayText= rotateCW(image);
+      String imageText = "";
+      boolean isImageBlank = true;
+      
+      //skip closed limitation line and open borderline when summing
+      for (int row = 1; row < actualWidth-1; row++)
+      {
+         //start new sum for row
+         int sum= 0;
+         for (int col = 1; col < actualHeight-1; col++)
+         {
+            if (displayText[row][col] == true)
+            {
+               sum += Math.pow(2, col-1);
+               isImageBlank = false;
+            }
+         }
+         
+         //add character to text
+         imageText += (char)sum;
+      }
+      
+      //save text, if 
+      if(isImageBlank)
+      {
+         text = "undefined";
+         return false;
+      }
+      else
+      {
+         text = imageText;
+         return true;
+      }
+   }
+   
+   //helper method for translateImageToText(), rotates image clockwise and returns as 2D array
+   private boolean[][] rotateCW(BarcodeImage myImage) 
+   {
+      int M = BarcodeImage.MAX_HEIGHT;
+      int N = BarcodeImage.MAX_WIDTH;
+      
+      boolean[][] rotatedArray = new boolean[N][M];
+      
+      for (int r = 0; r < M; r++) 
+      {
+          for (int c = 0; c < N; c++) 
+          {
+             rotatedArray[c][M-1-r] = myImage.getPixel(r,c);
+          }
+      }
+      return rotatedArray;
+   }
+   
+   //helper method for generateImageFromText(), 
+   //rotates 2D char array counterclockwise and returns it
+   private char[][] rotateCCW(char textArray[][]) 
+   {
+      int M = textArray.length;
+      int N = textArray[0].length;
+      
+      char[][] rotatedArray = new char[N][M];
+      
+      for (int r = 0; r < M; r++) 
+      {
+          for (int c = 0; c < N; c++) 
+             rotatedArray[N-1-c][r] = textArray[r][c];
+      }
+      return rotatedArray;
+   }
+   
+   
+   //Converts 2D array of char */' ' to barcode strings with borders
+   private static String[]  changeToStringArray (char[][] oldArray)
+   {
+      String [] stringArray = new String [oldArray.length+1];
+      
+      //initialize top and bottom border strings
+      stringArray[0] = "*";
+      stringArray[stringArray.length-1] = "*";
+      
+      //top border
+      for(int i=0; i<oldArray[0].length+1; i++)
+      {
+         if(i%2 == 1)
+            stringArray[0] += '*';
+         else
+            stringArray[0] += ' ';
+      }
+      
+      //bottom border
+      for(int i=0; i<oldArray[0].length+1; i++)
+            stringArray[stringArray.length-1] += '*';
+      
+      //barcode itself
+      for (int i = 1 ; i < oldArray.length; i++)
+      {
+         //initialize with left border
+         stringArray[i] = "*";
+         for (int j = 0; j < oldArray[i-1].length; j++)
+            stringArray[i] += oldArray[i-1][j];
+         
+         //right border
+         if(i%2 == 1)
+            stringArray[i] += '*';
+         else
+            stringArray[i] += ' ';
+      }
+      return stringArray;
+   }
+ 
+}
+
+/*************************  Test Run ************************
+
+CSUMB CSIT online program is top notch.
+--------------------------------------------
+|* * * * * * * * * * * * * * * * * * * * * |
+|*                                       * |
+|****** **** ****** ******* ** *** *****   |
+|*     *    ****************************** |
+|* **    * *        **  *    * * *   *     |
+|*   *    *  *****    *   * *   *  **  *** |
+|*  **     * *** **   **  *    **  ***  *  |
+|***  * **   **  *   ****    *  *  ** * ** |
+|*****  ***  *  * *   ** ** **  *   * *    |
+|***************************************** |
+--------------------------------------------
+
+You did it!  Great work.  Celebrate.
+-----------------------------------------
+|* * * * * * * * * * * * * * * * * * *  |
+|*                                    * |
+|**** *** **   ***** ****   *********   |
+|* ************ ************ ********** |
+|** *      *    *  * * *         * *    |
+|***   *  *           * **    *      ** |
+|* ** * *  *   * * * **  *   ***   ***  |
+|* *           **    *****  *   **   ** |
+|****  *  * *  * **  ** *   ** *  * *   |
+|************************************** |
+-----------------------------------------
+
+What a great resume builder this is!
+-----------------------------------------
+|* * * * * * * * * * * * * * * * * * *  |
+|*                                    * |
+|***** * ***** ****** ******* **** **   |
+|* ************************************ |
+|**  *    *  * * **    *    * *  *  *   |
+|* *               *    **     **  *  * |
+|**  *   * * *  * ***  * ***  *         |
+|**      **    * *    *     *    *  * * |
+|** *  * * **   *****  **  *    ** ***  |
+|************************************** |
+-----------------------------------------
+
+
+************************************************************/
