@@ -1,0 +1,58 @@
+<html>
+<style>
+body {
+    background-color: lightblue;
+}
+
+h1 {
+    color: red;
+    text-align: center;
+}
+body.inset {
+   Border-style: inset;
+	Border-color: red;
+	background-color: #3399ff;
+	
+}
+p {
+    font-family: verdana;
+    font-size: 20px;
+}
+
+h1.inset {
+	Border-style: inset;
+	Border-color: red;
+	background-color: white;
+}
+img.inset{
+	Border-style: inset;
+	Border-color: red;
+	background-color: white;
+	}
+	tr {
+	Border-style: inset;
+	Border-color: red;
+	background-color: #b3d9ff;
+	}
+
+</style>
+<body class = "inset">
+<h1 class="inset">Home For The Holidays Pet Adoption</h1>
+<table style="width:100%">
+<tr>
+<th> <a href = "http://localhost:8080/cst6/aboutUs.jsp" >  About Us! </a> </th>
+<th> <a href = "http://localhost:8080/cst6/aboutUs.jsp" >  Our Pets! </a> </th>
+<th> <a href = "http://localhost:8080/cst6/aboutUs.jsp" >  Our Pet Partners! </a> </th>
+<th> <a href = "http://localhost:8080/cst6/aboutUs.jsp" >  How to pick the right pet! </a> </th>
+<th> <a href = "http://localhost:8080/cst6/aboutUs.jsp" >  Donate! </a> </th>
+</tr></table>
+<br>
+<br>
+<table>
+<th><img class="inset" src="http://localhost:8080/cst6/images/Home.gif" align= center/></th>
+<th><p> Home for the Holidays is a free service that allows users to connected to the pets of thier dreams! If
+you are interested in bringing a special pet home for Christmas, please check out our loving animals that are available!
+Can't find a pet with us? Please feel free to visit on of our partnering websites!</p></th>
+</table>
+</body>
+</html>
