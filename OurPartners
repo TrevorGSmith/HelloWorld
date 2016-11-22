@@ -51,6 +51,15 @@ img.inset{
 	</style>
 <body class="inset">
 <h1 class="inset"> HERE IS A LIST OF OUR PARTNERS</h1>
+<table style="width:100%">
+<tr>
+<th> <a style= "color:white;" href = "http://localhost:8080/cst6" >  HOME </a> </th>
+<th> <a style= "color:white;" href = "http://localhost:8080/cst6/AboutUs.jsp" >  ABOUT US </a> </th>
+<th> <a style= " color:white;" href = "http://localhost:8080/cst6/aboutUs.jsp" > OUR PETS </a> </th>
+<th> <a style= "color:white;" href = "http://localhost:8080/cst6/Partners.jsp" >  PET PARTNERS </a> </th>
+<th> <a style= "color:white;" href = "http://localhost:8080/cst6/PickRightPet.jsp" >  HOW TO PICK THE RIGHT PET</a> </th>
+<th> <a style= "color:white;" href = "http://localhost:8080/cst6/aboutUs.jsp" >  DONATIONS </a> </th>
+</tr></table>
 <a class="inset" style= "color:white;" href = "http://www.Petfiner.com" >   1) Petfiner.com </a>
 <br><br>
 <a class="inset" style= "color:white;" href = "http://www.AnimalCenter.org" >   2) AnimalCenter.org </a>
