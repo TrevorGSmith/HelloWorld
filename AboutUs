@@ -53,7 +53,7 @@ img.inset{
 
 <br>
 <table>
-<th><img class="inset" src="http://localhost:8080/cst6/images/doglights.jpg" align= center/></th>
+<th><img class="inset" src="http://localhost:8080/cst6/images/doglights.jpg" align=center/><!--this shouldn't be an absolute path, should be relative--></th>
 <th><p> Home for the Holidays is a free service that allows users to connect to the pets of your dreams! We have partnered with
 other great web sites to provide you a whole range of pets that need a home, just like yours! If
 you are interested in bringing a special pet home for the holidays, please check out our loving animals that are available!
